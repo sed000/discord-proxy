@@ -1,0 +1,20 @@
+#!/bin/zsh
+export PATH="/Library/Frameworks/Python.framework/Versions/Current/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+ROOT="${0:A:h:h:h:h}"
+DATA="$HOME/Library/Application Support/discord-proxy"
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+PORT=8881
+mkdir -p "$DATA"
+
+started=0
+if ! nc -z 127.0.0.1 $PORT 2>/dev/null; then
+  python3 "$ROOT/proxy.py" >"$DATA/proxy.log" 2>&1 &
+  proxy_pid=$!
+  started=1
+  for i in {1..30}; do nc -z 127.0.0.1 $PORT 2>/dev/null && break; sleep 0.1; done
+fi
+
+"$CHROME" --user-data-dir="$DATA/chrome" --proxy-server="http://127.0.0.1:$PORT" \
+  --app="https://discord.com/app" --no-first-run --no-default-browser-check
+
+(( started )) && kill $proxy_pid 2>/dev/null
